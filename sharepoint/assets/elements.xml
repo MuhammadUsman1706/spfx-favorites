@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+    <CustomAction
+        Title="MyfavoritesUpdated"
+        Location="ClientSideExtension.ApplicationCustomizer"
+        ClientSideComponentId="80cc9d22-98d9-4ee2-840e-456969821261"
+        ClientSideComponentProperties="{&quot;testMessage&quot;:&quot;Test message&quot;}">
+    </CustomAction>
+</Elements>
