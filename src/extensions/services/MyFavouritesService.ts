@@ -21,7 +21,6 @@ export class MyFavouritesService implements IMyFavouritesService {
   private _sessionStorageKey: string = "MyFavourites_";
   private sp: SPFI;
   constructor(_props: IMyFavouritesTopBarProps) {
-    console.log("Favorites extension has loaded successfully!");
     this._context = _props.context;
     this._currentWebUrl = this._context.pageContext.web.absoluteUrl;
     this._sessionStorageKey += this._currentWebUrl;
