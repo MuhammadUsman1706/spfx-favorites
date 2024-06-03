@@ -25,7 +25,7 @@ export class MyFavouritesService implements IMyFavouritesService {
     this._currentWebUrl = this._context.pageContext.web.absoluteUrl;
     this._sessionStorageKey += this._currentWebUrl;
     this.sp = spfi().using(SPFx(this._context));
-    console.log("Favorites extension loaded!");
+    console.log("Favorites extension loaded.");
   }
 
   public async getMyFavourites(

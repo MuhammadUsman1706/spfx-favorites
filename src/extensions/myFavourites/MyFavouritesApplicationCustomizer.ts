@@ -8,8 +8,7 @@ import {
 } from "@microsoft/sp-application-base";
 
 import { IMyFavouritesTopBarProps } from "./components/MyFavouritesTopBar/IMyFavouritesTopBarProps";
-import { MyFavouritesTopBar } from "./components/MyFavouritesTopBar";
-
+import MyFavouritesTopBar from "./components/MyFavouritesTopBar/MyFavouritesTopBar";
 // const LOG_SOURCE: string = 'MyFavouritesApplicationCustomizer';
 
 /**

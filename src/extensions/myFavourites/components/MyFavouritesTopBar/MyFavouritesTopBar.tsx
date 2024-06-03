@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState, useEffect } from "react";
 import {
   DefaultButton,
   PrimaryButton,
@@ -21,193 +22,97 @@ import {
   FocusZoneDirection,
 } from "office-ui-fabric-react/lib/FocusZone";
 import { IMyFavouritesTopBarProps } from "./IMyFavouritesTopBarProps";
-import { IMyFavouritesTopBarState } from "./IMyFavouritesTopBarState";
 import { MyFavouritesService } from "../../../services/MyFavouritesService";
 import { IMyFavouriteItem } from "../../../interfaces/IMyFavouriteItem";
-import { MyFavouriteDisplayItem } from "../MyFavouriteDisplayItem";
+import MyFavouriteDisplayItem from "../MyFavouriteDisplayItem/MyFavouriteDisplayItem";
 import { css } from "@uifabric/utilities/lib/css";
 import styles from "../MyFavourites.module.scss";
 import * as strings from "MyFavouritesApplicationCustomizerStrings";
 
-export class MyFavouritesTopBar extends React.Component<
-  IMyFavouritesTopBarProps,
-  IMyFavouritesTopBarState
-> {
-  private _MyFavouritesServiceInstance: MyFavouritesService;
-  private _MyFavouriteItems: IMyFavouriteItem[] = [];
-  constructor(props: IMyFavouritesTopBarProps) {
-    super(props);
-    this.state = {
-      showPanel: false,
-      showDialog: false,
-      dialogTitle: "",
-      myFavouriteItems: [],
-      itemInContext: {
-        Id: 0,
-        Title: "",
-        Description: "",
-      },
-      isEdit: false,
-      status: (
-        <Spinner size={SpinnerSize.large} label={strings.LoadingStatusLabel} />
-      ),
-      disableButtons: false,
-    };
+let _MyFavouriteItems: IMyFavouriteItem[] = [];
 
-    this._MyFavouritesServiceInstance = new MyFavouritesService(this.props);
-    this._getMyFavourites.bind(this);
-  }
+const MyFavouritesTopBar: React.FC<IMyFavouritesTopBarProps> = (props) => {
+  const [showPanel, setShowPanel] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [myFavouriteItems, setMyFavouriteItems] = useState<IMyFavouriteItem[]>(
+    []
+  );
+  const [itemInContext, setItemInContext] = useState<IMyFavouriteItem>({
+    Id: 0,
+    Title: "",
+    Description: "",
+  });
+  const [isEdit, setIsEdit] = useState(false);
+  const [status, setStatus] = useState(
+    <Spinner size={SpinnerSize.large} label={strings.LoadingStatusLabel} />
+  );
+  const [disableButtons, setDisableButtons] = useState(false);
 
-  public render(): React.ReactElement<IMyFavouritesTopBarProps> {
-    return (
-      <div className={styles.ccTopBar}>
-        <PrimaryButton
-          data-id="menuButton"
-          title={strings.ShowMyFavouritesLabel}
-          text={strings.ShowMyFavouritesLabel}
-          ariaLabel={strings.ShowMyFavouritesLabel}
-          iconProps={{ iconName: "View" }}
-          className={styles.ccTopBarButton}
-          onClick={this._showMenu}
-        />
-        <PrimaryButton
-          data-id="menuButton"
-          title={strings.AddPageToFavouritesLabel}
-          text={strings.AddPageToFavouritesLabel}
-          ariaLabel={strings.AddPageToFavouritesLabel}
-          iconProps={{ iconName: "Add" }}
-          className={styles.ccTopBarButton}
-          onClick={this._showDialog}
-        />
-        <Panel
-          isOpen={this.state.showPanel}
-          type={PanelType.medium}
-          onDismiss={this._hideMenu}
-          headerText={strings.MyFavouritesHeader}
-          isLightDismiss={true}
-        >
-          <div data-id="menuPanel">
-            <TextField
-              placeholder={strings.FilterFavouritesPrompt}
-              iconProps={{ iconName: "Filter" }}
-              onChange={this._onFilterChanged}
-            />
-            <div>{this.state.status}</div>
-            <FocusZone direction={FocusZoneDirection.vertical}>
-              {this.state.myFavouriteItems.length > 0 ? (
-                <List
-                  items={this.state.myFavouriteItems}
-                  onRenderCell={this._onRenderCell}
-                />
-              ) : (
-                <MessageBar
-                  messageBarType={MessageBarType.warning}
-                  isMultiline={false}
-                >
-                  {strings.NoFavouritesLabel}
-                </MessageBar>
-              )}
-            </FocusZone>
-          </div>
-        </Panel>
-        <Dialog
-          hidden={!this.state.showDialog}
-          onDismiss={this._hideDialog}
-          dialogContentProps={{
-            type: DialogType.largeHeader,
-            title: this.state.dialogTitle,
-          }}
-          modalProps={{
-            titleAriaId: "myFavDialog",
-            subtitleAriaId: "myFavDialog",
-            isBlocking: false,
-            containerClassName: "ms-dialogMainOverride",
-          }}
-        >
-          <div>{this.state.status}</div>
-          <TextField
-            label={strings.TitleFieldName}
-            onChange={this._setTitle}
-            value={this.state.itemInContext.Title}
-          />
-          <TextField
-            label={strings.DescriptionFieldName}
-            multiline
-            rows={4}
-            onChange={this._setDescription}
-            value={this.state.itemInContext.Description}
-          />
-          <DialogFooter>
-            <PrimaryButton
-              onClick={(_event) => this._saveMyFavourite()}
-              disabled={this.state.disableButtons}
-              text={strings.SaveButtonLabel}
-            />
-            <DefaultButton
-              onClick={this._hideDialog}
-              disabled={this.state.disableButtons}
-              text={strings.CancelButtonLabel}
-            />
-          </DialogFooter>
-        </Dialog>
-      </div>
-    );
-  }
+  const _MyFavouritesServiceInstance = new MyFavouritesService(props);
 
-  public async deleteFavourite(favouriteItemId: number): Promise<void> {
-    let result: boolean =
-      await this._MyFavouritesServiceInstance.deleteFavourite(favouriteItemId);
-    if (result) {
-      this._getMyFavourites();
-    }
-  }
-
-  public editFavourite(favouriteItem: IMyFavouriteItem): void {
+  const editFavourite = (favouriteItem: IMyFavouriteItem): void => {
     let status: JSX.Element = <span></span>;
     let dialogTitle: string = strings.EditFavouritesDialogTitle;
-    this.setState({
-      showPanel: false,
-      itemInContext: favouriteItem,
-      isEdit: true,
-      showDialog: true,
-      dialogTitle,
-      status,
-    });
-  }
+    setShowPanel(false);
+    setItemInContext(favouriteItem);
+    setIsEdit(true);
+    setShowDialog(true);
+    setDialogTitle(dialogTitle);
+    setStatus(status);
+  };
 
-  private async _getMyFavourites(): Promise<void> {
+  const _getMyFavourites = async (): Promise<void> => {
     let status: JSX.Element = (
       <Spinner size={SpinnerSize.large} label={strings.LoadingStatusLabel} />
     );
-    this.setState({ status });
+    setStatus(status);
 
     const myFavouriteItems: IMyFavouriteItem[] =
-      await this._MyFavouritesServiceInstance.getMyFavourites(true);
-    this._MyFavouriteItems = myFavouriteItems;
+      await _MyFavouritesServiceInstance.getMyFavourites(true);
+    _MyFavouriteItems = myFavouriteItems;
     status = <span></span>;
-    this.setState({ myFavouriteItems, status });
-  }
+    setMyFavouriteItems(myFavouriteItems);
+    setStatus(status);
+  };
 
-  private async _saveMyFavourite(): Promise<void> {
+  const deleteFavourite = async (favouriteItemId: number): Promise<void> => {
+    let result: boolean = await _MyFavouritesServiceInstance.deleteFavourite(
+      favouriteItemId
+    );
+    if (result) {
+      _getMyFavourites();
+    }
+  };
+
+  const _hideMenu = () => {
+    setShowPanel(false);
+  };
+
+  const _hideDialog = () => {
+    setShowDialog(false);
+  };
+
+  const _saveMyFavourite = async (): Promise<void> => {
     let status: JSX.Element = (
       <Spinner size={SpinnerSize.large} label={strings.SavingStatusLabel} />
     );
-    let disableButtons: boolean = true;
-    this.setState({ status, disableButtons });
+    setDisableButtons(true);
+    setStatus(status);
     let itemToSave: IMyFavouriteItem = {
-      Title: this.state.itemInContext.Title,
-      Description: this.state.itemInContext.Description,
+      Title: itemInContext.Title,
+      Description: itemInContext.Description,
     };
     let itemToEdit: IMyFavouriteItem = {
       ...itemToSave,
-      Id: this.state.itemInContext.Id,
+      Id: itemInContext.Id,
     };
-    let result: boolean = this.state.isEdit
-      ? await this._MyFavouritesServiceInstance.updateFavourite(itemToEdit)
-      : await this._MyFavouritesServiceInstance.saveFavourite(itemToSave);
+    let result: boolean = isEdit
+      ? await _MyFavouritesServiceInstance.updateFavourite(itemToEdit)
+      : await _MyFavouritesServiceInstance.saveFavourite(itemToSave);
 
     if (result) {
-      this._hideDialog();
+      _hideDialog();
     } else {
       status = (
         <MessageBar messageBarType={MessageBarType.error} isMultiline={false}>
@@ -215,20 +120,16 @@ export class MyFavouritesTopBar extends React.Component<
         </MessageBar>
       );
     }
-    disableButtons = false;
-    this.setState({ status, disableButtons });
-  }
-
-  private _showMenu = () => {
-    this._getMyFavourites();
-    this.setState({ showPanel: true });
+    setDisableButtons(false);
+    setStatus(status);
   };
 
-  private _hideMenu = () => {
-    this.setState({ showPanel: false });
+  const _showMenu = () => {
+    _getMyFavourites();
+    setShowPanel(true);
   };
 
-  private _showDialog = () => {
+  const _showDialog = () => {
     let itemInContext: IMyFavouriteItem = {
       Id: 0,
       Title: "",
@@ -237,20 +138,14 @@ export class MyFavouritesTopBar extends React.Component<
     let isEdit: boolean = false;
     let status: JSX.Element = <span></span>;
     let dialogTitle: string = strings.AddToFavouritesDialogTitle;
-    this.setState({
-      itemInContext,
-      isEdit,
-      showDialog: true,
-      dialogTitle,
-      status,
-    });
+    setItemInContext(itemInContext);
+    setIsEdit(isEdit);
+    setShowDialog(true);
+    setDialogTitle(dialogTitle);
+    setStatus(status);
   };
 
-  private _hideDialog = () => {
-    this.setState({ showDialog: false });
-  };
-
-  private _onRenderCell = (
+  const _onRenderCell = (
     myFavouriteItem: IMyFavouriteItem,
     _index: number | undefined
   ): JSX.Element => {
@@ -262,46 +157,137 @@ export class MyFavouritesTopBar extends React.Component<
         <MyFavouriteDisplayItem
           displayItem={myFavouriteItem}
           deleteFavourite={(favouriteItemId: number) =>
-            this.deleteFavourite(favouriteItemId)
+            deleteFavourite(favouriteItemId)
           }
-          editFavoutite={this.editFavourite}
+          editFavoutite={editFavourite}
         />
       </div>
     );
   };
 
-  private _onFilterChanged = (
+  const _onFilterChanged = (
     _event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
     newValue?: string
   ) => {
-    let items: IMyFavouriteItem[] = this._MyFavouriteItems;
-    this.setState({
-      myFavouriteItems: newValue
+    let items: IMyFavouriteItem[] = _MyFavouriteItems;
+    setMyFavouriteItems(
+      newValue
         ? items.filter(
             (item) =>
               Number(
                 item.Title?.toLowerCase().indexOf(newValue.toLowerCase())
               ) >= 0
           )
-        : items,
+        : items
+    );
+  };
+
+  const _setItemInContext = (
+    _event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+    newValue?: string
+  ) => {
+    setItemInContext({
+      ...itemInContext,
+      [(_event.target as HTMLInputElement).name]: newValue,
     });
   };
 
-  private _setTitle = (
-    _event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
-    newValue?: string
-  ) => {
-    const { itemInContext } = this.state;
-    itemInContext.Title = newValue;
-    this.setState({ itemInContext });
-  };
+  useEffect(() => {
+    _getMyFavourites();
+  }, []);
 
-  private _setDescription = (
-    _event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
-    newValue?: string
-  ) => {
-    const { itemInContext } = this.state;
-    itemInContext.Description = newValue;
-    this.setState({ itemInContext });
-  };
-}
+  return (
+    <div className={styles.ccTopBar}>
+      <PrimaryButton
+        data-id="menuButton"
+        title={strings.ShowMyFavouritesLabel}
+        text={strings.ShowMyFavouritesLabel}
+        ariaLabel={strings.ShowMyFavouritesLabel}
+        iconProps={{ iconName: "View" }}
+        className={styles.ccTopBarButton}
+        onClick={_showMenu}
+      />
+      <PrimaryButton
+        data-id="menuButton"
+        title={strings.AddPageToFavouritesLabel}
+        text={strings.AddPageToFavouritesLabel}
+        ariaLabel={strings.AddPageToFavouritesLabel}
+        iconProps={{ iconName: "Add" }}
+        className={styles.ccTopBarButton}
+        onClick={_showDialog}
+      />
+      <Panel
+        isOpen={showPanel}
+        type={PanelType.medium}
+        onDismiss={_hideMenu}
+        headerText={strings.MyFavouritesHeader}
+        isLightDismiss={true}
+      >
+        <div data-id="menuPanel">
+          <TextField
+            placeholder={strings.FilterFavouritesPrompt}
+            iconProps={{ iconName: "Filter" }}
+            onChange={_onFilterChanged}
+          />
+          <div>{status}</div>
+          <FocusZone direction={FocusZoneDirection.vertical}>
+            {myFavouriteItems.length > 0 ? (
+              <List items={myFavouriteItems} onRenderCell={_onRenderCell} />
+            ) : (
+              <MessageBar
+                messageBarType={MessageBarType.warning}
+                isMultiline={false}
+              >
+                {strings.NoFavouritesLabel}
+              </MessageBar>
+            )}
+          </FocusZone>
+        </div>
+      </Panel>
+      <Dialog
+        hidden={!showDialog}
+        onDismiss={_hideDialog}
+        dialogContentProps={{
+          type: DialogType.largeHeader,
+          title: dialogTitle,
+        }}
+        modalProps={{
+          titleAriaId: "myFavDialog",
+          subtitleAriaId: "myFavDialog",
+          isBlocking: false,
+          containerClassName: "ms-dialogMainOverride",
+        }}
+      >
+        <div>{status}</div>
+        <TextField
+          label={strings.TitleFieldName}
+          onChange={_setItemInContext}
+          value={itemInContext.Title}
+          name="Title"
+        />
+        <TextField
+          label={strings.DescriptionFieldName}
+          multiline
+          rows={4}
+          onChange={_setItemInContext}
+          value={itemInContext.Description}
+          name="Description"
+        />
+        <DialogFooter>
+          <PrimaryButton
+            onClick={(_event) => _saveMyFavourite()}
+            disabled={disableButtons}
+            text={strings.SaveButtonLabel}
+          />
+          <DefaultButton
+            onClick={_hideDialog}
+            disabled={disableButtons}
+            text={strings.CancelButtonLabel}
+          />
+        </DialogFooter>
+      </Dialog>
+    </div>
+  );
+};
+
+export default MyFavouritesTopBar;

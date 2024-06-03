@@ -4,7 +4,6 @@
   "https": true,
   "serveConfigurations": {
     "default": {
-      // "pageUrl": "https://contoso.sharepoint.com/sites/mySite/SitePages/myPage.aspx",
       "pageUrl": "https://sxmyf.sharepoint.com/",
       "customActions": {
         "cbf00a23-cf14-4b41-9574-301259ec4a73": {
@@ -13,7 +12,6 @@
       }
     },
     "myFavourites": {
-      // "pageUrl": "https://contoso.sharepoint.com/sites/mySite/SitePages/myPage.aspx",
       "pageUrl": "https://sxmyf.sharepoint.com/",
       "customActions": {
         "cbf00a23-cf14-4b41-9574-301259ec4a73": {

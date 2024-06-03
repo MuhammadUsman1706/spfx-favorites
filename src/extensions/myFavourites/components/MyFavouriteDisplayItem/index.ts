@@ -1,3 +1,2 @@
-export * from './IMyFavouriteDisplayItemProps';
-export * from './IMyFavouriteDisplayItemState';
-export * from './MyFavouriteDisplayItem';
+export * from "./IMyFavouriteDisplayItemProps";
+export * from "./IMyFavouriteDisplayItemState";
